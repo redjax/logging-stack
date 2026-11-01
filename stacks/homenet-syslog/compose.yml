@@ -1,0 +1,157 @@
+---
+name: logging-collector
+
+volumes:
+  loki_data: {}
+  alloy_data: {}
+  grafana_data: {}
+  prometheus_data: {}
+
+x-container-logging: &container-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  loki:
+    image: ${LOKI_IMAGE:-grafana/loki:latest}
+    restart: unless-stopped
+    user: "0:0"
+    cpus: "${LOKI_CPUS:-1.0}"
+    mem_limit: "${LOKI_MEM_LIMIT:-384M}"
+    command:
+      - -config.file=/etc/loki/config.yaml
+      - -config.expand-env=true
+    ports:
+      - "${LOKI_BIND_ADDRESS:-127.0.0.1}:${LOKI_HTTP_PORT:-3100}:3100"
+    environment:
+      LOKI_MAX_QUERY_SERIES: ${LOKI_MAX_QUERY_SERIES:-10000}
+    volumes:
+      - type: bind
+        source: ./config/loki/loki.yaml
+        target: /etc/loki/config.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: volume
+        source: loki_data
+        target: /var/loki
+    logging: *container-logging
+
+  alloy:
+    image: ${ALLOY_IMAGE:-grafana/alloy:latest}
+    restart: unless-stopped
+    user: "0:0"
+    cpus: "${ALLOY_CPUS:-0.5}"
+    mem_limit: "${ALLOY_MEM_LIMIT:-128M}"
+    depends_on:
+      - loki
+    environment:
+      NODE_NAME: ${ALLOY_NODE_NAME:-rpi-syslog}
+      LOKI_URL: http://loki:3100
+      MODEM_LOG_PATH: ${MODEM_LOG_PATH:-/var/log/modem}
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "${ALLOY_BIND_ADDRESS:-127.0.0.1}:${ALLOY_HTTP_PORT:-12345}:12345"
+    volumes:
+      - type: bind
+        source: ./config/alloy/config.alloy
+        target: /etc/alloy/config.alloy
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/log
+        target: /var/log
+        read_only: true
+      - type: volume
+        source: alloy_data
+        target: /var/lib/alloy/data
+
+    logging: *container-logging
+
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:latest}
+    restart: unless-stopped
+    cpus: "${GRAFANA_CPUS:-1.0}"
+    mem_limit: "${GRAFANA_MEM_LIMIT:-256M}"
+    depends_on:
+      - loki
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_NAME: "Main Org."
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "${GRAFANA_BIND_ADDRESS:-127.0.0.1}:${GRAFANA_HTTP_PORT:-3000}:3000"
+    volumes:
+      - type: bind
+        source: ./config/grafana/provisioning/datasources/loki.yml
+        target: /etc/grafana/provisioning/datasources/loki.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./config/grafana/provisioning/datasources/prometheus.yml
+        target: /etc/grafana/provisioning/datasources/prometheus.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: volume
+        source: grafana_data
+        target: /var/lib/grafana
+    logging: *container-logging
+
+  prometheus:
+    image: ${PROMETHEUS_IMG:-prom/prometheus:latest}
+    restart: unless-stopped
+    cpus: "${PROMETHEUS_CPUS:-0.5}"
+    mem_limit: "${PROMETHEUS_MEM_LIMIT:-256M}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-15d}
+      - --storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-2GB}
+      - --web.listen-address=0.0.0.0:9090
+    ports:
+      - "${PROMETHEUS_BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_HTTP_PORT:-9090}:9090"
+    volumes:
+      - type: bind
+        source: ${PROMETHEUS_CONFIG_FILE:-./config/prometheus/prometheus.yml}
+        target: /etc/prometheus/prometheus.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: volume
+        source: ${PROMETHEUS_DATA_DIR:-prometheus_data}
+        target: /prometheus
+    logging: *container-logging
+
+  node-exporter:
+    image: ${NODE_EXPORTER_IMAGE:-quay.io/prometheus/node-exporter:latest}
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    cpus: "${NODE_EXPORTER_CPUS:-0.25}"
+    mem_limit: "${NODE_EXPORTER_MEM_LIMIT:-64M}"
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=${NODE_EXPORTER_BIND_ADDRESS:-127.0.0.1}:9100
+    volumes:
+      - type: bind
+        source: /
+        target: /host
+        read_only: true
+        bind:
+          propagation: rslave
+    logging: *container-logging 
+

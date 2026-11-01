@@ -1,0 +1,49 @@
+logging {
+  level = "info"
+}
+
+loki.source.file "modem" {
+  targets = [
+    {
+      __path__ = sys.env("MODEM_LOG_PATH"),
+      job      = "modem",
+      source   = "rsyslog",
+    },
+  ]
+
+  forward_to    = [loki.process.firewall.receiver]
+  tail_from_end = true
+}
+
+loki.process "firewall" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.regex {
+    expression = "action=(?P<action>\\S+).*?reason=(?P<reason>\\S+).*?hook=(?P<hook>\\S+).*?IN=(?P<in_interface>\\S*) OUT=(?P<out_interface>\\S*).*?SRC=(?P<src_ip>\\S+) DST=(?P<dst_ip>\\S+).*?PROTO=(?P<protocol>\\S+) SPT=(?P<src_port>\\d+) DPT=(?P<dst_port>\\d+)"
+  }
+
+  stage.structured_metadata {
+    values = {
+      action        = "action",
+      reason        = "reason",
+      hook          = "hook",
+      in_interface  = "in_interface",
+      out_interface = "out_interface",
+      src_ip        = "src_ip",
+      dst_ip        = "dst_ip",
+      protocol      = "protocol",
+      src_port      = "src_port",
+      dst_port      = "dst_port",
+    }
+  }
+}
+
+loki.write "default" {
+  endpoint {
+    url = sys.env("LOKI_URL") + "/loki/api/v1/push"
+  }
+
+  external_labels = {
+    collector = sys.env("NODE_NAME"),
+  }
+}
