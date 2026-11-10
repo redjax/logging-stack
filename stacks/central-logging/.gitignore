@@ -1,0 +1,10 @@
+data/*
+data/**
+prometheus/targets/*
+
+!prometheus/
+!prometheus/targets/
+
+!*example*.*
+!*.*example*
+!.gitkeep
