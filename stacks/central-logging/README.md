@@ -35,3 +35,11 @@ Create a new file for a machine or group of machines (e.g. `desktop.yml`):
 ```
 
 Targets are automatically discovered by Prometheus through file-based service discovery. Changes are detected periodically and do not require a Prometheus restart. Ensure the target directory is mounted into the Prometheus container and referenced by a `file_sd_configs` entry in `prometheus.yml`.
+
+## Troubleshooting
+
+### Permission errors with local volume mounts
+
+If you set a host bind mount (local directory) for `PROMETHEUS_DATA_DIR` or `GRAFANA_DATA_DIR`, you are likely to get permission errors when starting the container. While you could use `chown` to set the correct owner on the local directory, it is easier to use the default Docker named volumes for these 2 services. If you want to interact with the files in the volume, find its path in `/var/lib/docker/volumes`.
+
+Loki does not have this problem, and can use host volume mounts for its data directory.
