@@ -1,0 +1,24 @@
+---
+##
+# Create a YAML file in the 'targets/' directory for each group of remote machines,
+# for example: desktop.yml, servers.yml, networking.yml.
+#
+# This directory is mounted into the Prometheus container and
+# automatically discovered by Prometheus through file-based
+# service discovery.
+#
+# Targets defined here are automatically added to the corresponding
+# scrape job. Changes are detected without restarting Prometheus.
+##
+
+- targets:
+    - 192.168.1.50:9100
+  labels:
+    hostname: desktop
+    environment: home
+
+- targets:
+    - 192.168.1.51:9100
+  labels:
+    hostname: nas
+    environment: home

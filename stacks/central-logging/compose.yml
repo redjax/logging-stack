@@ -1,0 +1,83 @@
+---
+name: central-logging
+
+volumes:
+  loki_data: {}
+  grafana_data: {}
+  prometheus_data: {}
+
+x-container-logging: &container-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "6"
+
+services:
+  loki:
+    image: ${LOKI_IMAGE:-grafana/loki:latest}
+    restart: unless-stopped
+    user: "0:0"
+    cpus: "${LOKI_CPUS:-1.0}"
+    mem_limit: "${LOKI_MEM_LIMIT:-512M}"
+    command:
+      - -config.file=/etc/loki/loki.yaml
+    ports:
+      - "${LOKI_BIND_ADDRESS:-0.0.0.0}:${LOKI_HTTP_PORT:-3100}:3100"
+    volumes:
+      - type: bind
+        source: ${LOKI_CONFIG_FILE:-./config/loki/loki.yml}
+        target: /etc/loki/loki.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - ${LOKI_DATA_DIR:-loki_data}:/var/loki
+    logging: *container-logging
+
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:latest}
+    restart: unless-stopped
+    cpus: "${PROMETHEUS_CPUS:-0.5}"
+    mem_limit: "${PROMETHEUS_MEM_LIMIT:-384M}"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d}
+      - --storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-5GB}
+      - --web.listen-address=0.0.0.0:9090
+      - --web.enable-remote-write-receiver
+    ports:
+      - "${PROMETHEUS_BIND_ADDRESS:-0.0.0.0}:${PROMETHEUS_HTTP_PORT:-9090}:9090"
+    volumes:
+      - type: bind
+        source: ${PROMETHEUS_CONFIG_FILE:-./config/prometheus/prometheus.yml}
+        target: /etc/prometheus/prometheus.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - ${PROMETHEUS_DATA_DIR:-prometheus_data}:/prometheus
+    logging: *container-logging
+
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:latest}
+    restart: unless-stopped
+    cpus: "${GRAFANA_CPUS:-1.0}"
+    mem_limit: "${GRAFANA_MEM_LIMIT:-384M}"
+    depends_on:
+      - loki
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    ports:
+      - "${GRAFANA_BIND_ADDRESS:-0.0.0.0}:${GRAFANA_HTTP_PORT:-3000}:3000"
+    volumes:
+      - ${GRAFANA_DATA_DIR:-grafana_data}:/var/lib/grafana
+      - type: bind
+        source: ${GRAFANA_PROVISIONING_DIR:-./config/grafana/provisioning}
+        target: /etc/grafana/provisioning
+        read_only: true
+        bind:
+          create_host_path: false
+    logging: *container-logging
