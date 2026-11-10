@@ -1,0 +1,33 @@
+---
+volumes:
+  alloy_data: {}
+
+services:
+  alloy:
+    image: grafana/alloy:${ALLOY_IMAGE:-latest}
+    container_name: alloy
+    restart: unless-stopped
+    user: "0:0"
+    cpus: "${ALLOY_CPUS:-0.5}"
+    mem_limit: "${ALLOY_MEM_LIMIT:-256M}"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      LOKI_URL: ${LOKI_URL:?Set LOKI_URL in .env}
+      HOSTNAME: ${COLLECTOR_HOSTNAME:-unknown}
+    ports:
+      - "${ALLOY_BIND_ADDRESS:-127.0.0.1}:${ALLOY_PORT:-12345}:12345"
+    volumes:
+      - ${ALLOY_CONFIG_FILE:-./config.alloy}:/etc/alloy/config.alloy:ro
+      - ${ALLOY_DATA_DIR:-alloy_data}:/var/lib/alloy/data
+
+      ## Mount your host's Systemd journal
+      - /var/log/journal:/var/log/journal:ro
+      - /run/log/journal:/run/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+
+      ## Mount syslog logs
+      - /var/log:/var/log:ro

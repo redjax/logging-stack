@@ -1,0 +1,32 @@
+
+loki.write "central" {
+  endpoint {
+    url = env("LOKI_URL") + "/loki/api/v1/push"
+  }
+}
+
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "priority"
+  }
+}
+
+loki.source.journal "systemd" {
+  max_age = "24h"
+
+  relabel_rules = loki.relabel.journal.rules
+  forward_to    = [loki.write.central.receiver]
+
+  labels = {
+    hostname = env("HOSTNAME"),
+    job      = "systemd",
+  }
+}
