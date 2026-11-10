@@ -1,0 +1,31 @@
+---
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  ## Monitor Prometheus itself
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090
+
+  ## Monitor Loki itself
+  - job_name: loki
+    static_configs:
+      - targets:
+          - loki:3100
+
+  ## Scrape node_exporter endpoints
+  - job_name: node
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/node/*.yml
+        refresh_interval: 60s
+
+  ## Scrape cadvisor endpoints
+  - job_name: cadvisor
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/cadvisor/*.yml
+        refresh_interval: 60s
