@@ -6,10 +6,6 @@
 name: Security scans
 
 on:
-  push:
-    branches:
-      - feat/security-scans
-
   schedule:
     - cron: "0 0 */7 * *"
 
