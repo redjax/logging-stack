@@ -1,0 +1,22 @@
+---
+services:
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:${NODE_EXPORTER_IMAGE:-latest}
+    container_name: node-exporter
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    cpus: "${NODE_EXPORTER_CPUS:-0.25}"
+    mem_limit: "${NODE_EXPORTER_MEM_LIMIT:-64M}"
+    command:
+      - --path.rootfs=/host
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --web.listen-address=${NODE_EXPORTER_LISTEN_ADDRESS:-0.0.0.0:9100}
+    volumes:
+      - type: bind
+        source: /
+        target: /host
+        read_only: true
+        bind:
+          propagation: rslave

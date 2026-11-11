@@ -1,0 +1,5 @@
+data/*
+*.alloy
+
+!*example*.*
+!*.*example*

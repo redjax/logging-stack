@@ -1,9 +1,14 @@
 data/*
 data/**
-prometheus/targets/*
+config/prometheus/targets/*
+config/prometheus/targets/cadvisor/*
+config/prometheus/targets/node_exporter/*
+config/prometheus/prometheus.yml
 
-!prometheus/
-!prometheus/targets/
+!config/prometheus/
+!config/prometheus/targets/
+!config/prometheus/targets/cadvisor/
+!config/prometheus/targets/node_exporter/
 
 !*example*.*
 !*.*example*

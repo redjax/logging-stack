@@ -1,0 +1,39 @@
+---
+services:
+  cadvisor:
+    image: ghcr.io/google/cadvisor:${CADVISOR_IMAGE:-latest}
+    container_name: cadvisor
+    restart: unless-stopped
+    cpus: "${CADVISOR_CPUS:-0.5}"
+    mem_limit: "${CADVISOR_MEM_LIMIT:-256M}"
+    ports:
+      - "${CADVISOR_BIND_ADDRESS:-0.0.0.0}:${CADVISOR_PORT:-8080}:8080"
+    volumes:
+      - type: bind
+        source: /
+        target: /rootfs
+        read_only: true
+        bind:
+          propagation: rslave
+
+      - type: bind
+        source: /var/run
+        target: /var/run
+        read_only: true
+
+      - type: bind
+        source: /sys
+        target: /sys
+        read_only: true
+
+      - type: bind
+        source: /var/lib/docker
+        target: /var/lib/docker
+        read_only: true
+
+      - type: bind
+        source: /dev
+        target: /dev
+        read_only: true
+        bind:
+          create_host_path: false

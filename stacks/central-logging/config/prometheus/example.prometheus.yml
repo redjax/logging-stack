@@ -16,10 +16,16 @@ scrape_configs:
       - targets:
           - loki:3100
 
-  ## Optional: scrape exporters on remote infrastructure.
-  #  Add machines here as needed, or use file-based discovery.
+  ## Scrape node_exporter endpoints
   - job_name: node
     file_sd_configs:
       - files:
-          - /etc/prometheus/targets/*.yml
+          - /etc/prometheus/targets/node_exporter/*.yml
+        refresh_interval: 60s
+
+  ## Scrape cadvisor endpoints
+  - job_name: cadvisor
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/cadvisor/*.yml
         refresh_interval: 60s
