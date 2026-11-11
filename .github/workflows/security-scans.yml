@@ -99,10 +99,8 @@ jobs:
     with:
       ## Scheduled scans run Trivy, OSV-Scanner, and TruffleHog.
       #  Manual runs use the workflow_dispatch boolean inputs.
-      # enableTrivy: ${{ github.event_name == 'schedule' || inputs.enableTrivy == true }}
-      enableTrivy: true
-      # enableGitleaks: ${{ inputs.enableGitleaks == true }}
-      enableGitleaks: true
+      enableTrivy: ${{ github.event_name == 'schedule' || inputs.enableTrivy == true }}
+      enableGitleaks: ${{ inputs.enableGitleaks == true }}
       # enableOSV: ${{ github.event_name == 'schedule' || inputs.enableOSV == true }}
       enableOSV: false
       # enableCodeQL: ${{ inputs.enableCodeQL == true }}
