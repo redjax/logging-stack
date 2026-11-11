@@ -33,7 +33,7 @@ on:
         description: Run CodeQL
         required: false
         type: boolean
-        default: false
+        default: true
 
       enableTruffleHog:
         description: Run TruffleHog
@@ -99,8 +99,7 @@ jobs:
       enableGitleaks: ${{ inputs.enableGitleaks == true }}
       # enableOSV: ${{ github.event_name == 'schedule' || inputs.enableOSV == true }}
       enableOSV: false
-      # enableCodeQL: ${{ inputs.enableCodeQL == true }}
-      enableCodeQL: false
+      enableCodeQL: ${{ inputs.enableCodeQL == true }}
       enableTruffleHog: ${{ github.event_name == 'schedule' || inputs.enableTruffleHog == true }}
 
       ## Use the repository-local ignore file for both scheduled and manual runs.
