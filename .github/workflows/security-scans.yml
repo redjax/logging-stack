@@ -1,0 +1,118 @@
+---
+##################################################
+# Run security scanners against this repository. #
+##################################################
+
+name: Security scans
+
+on:
+  schedule:
+    - cron: "0 0 */7 * *"
+
+  workflow_dispatch:
+    inputs:
+      enableTrivy:
+        description: Run Trivy
+        required: false
+        type: boolean
+        default: true
+
+      enableGitleaks:
+        description: Run Gitleaks
+        required: false
+        type: boolean
+        default: true
+
+      enableOSV:
+        description: Run OSV-Scanner
+        required: false
+        type: boolean
+        default: false
+
+      enableCodeQL:
+        description: Run CodeQL
+        required: false
+        type: boolean
+        default: true
+
+      enableTruffleHog:
+        description: Run TruffleHog
+        required: false
+        type: boolean
+        default: true
+
+      trivyIgnoreFile:
+        description: Repository-local Trivy ignore file
+        required: false
+        type: string
+        default: .trivyignore.yaml
+
+      failOnTrivyFindings:
+        description: Fail when Trivy reports findings
+        required: false
+        type: boolean
+        default: true
+
+      failOnGitleaksFindings:
+        description: Fail when Gitleaks reports findings
+        required: false
+        type: boolean
+        default: true
+
+      failOnOSVFindings:
+        description: Fail when OSV-Scanner reports vulnerabilities
+        required: false
+        type: boolean
+        default: true
+
+      failOnTruffleHogFindings:
+        description: Fail when TruffleHog reports findings
+        required: false
+        type: boolean
+        default: true
+
+      pipelineTemplatesRef:
+        description: Branch, tag, or SHA in PipelineTemplates repository to checkout
+        required: false
+        type: string
+        default: "main"
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  security-scans:
+    name: Run security scans
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    uses: redjax/PipelineTemplates/.github/workflows/security-scans.yml@09e221bba621952a99201050ab426db922e0d134 # main
+    with:
+      ## Scheduled scans run Trivy, OSV-Scanner, and TruffleHog.
+      #  Manual runs use the workflow_dispatch boolean inputs.
+      enableTrivy: ${{ github.event_name == 'schedule' || inputs.enableTrivy == true }}
+      enableGitleaks: ${{ inputs.enableGitleaks == true }}
+      # enableOSV: ${{ github.event_name == 'schedule' || inputs.enableOSV == true }}
+      enableOSV: false
+      enableCodeQL: ${{ inputs.enableCodeQL == true }}
+      enableTruffleHog: ${{ github.event_name == 'schedule' || inputs.enableTruffleHog == true }}
+
+      ## Use the repository-local ignore file for both scheduled and manual runs.
+      trivyIgnoreFile: ${{ inputs.trivyIgnoreFile || '.trivyignore.yaml' }}
+
+      ## Scheduled scans enforce findings policies. Manual runs use their inputs.
+      failOnTrivyFindings: ${{ github.event_name == 'schedule' || inputs.failOnTrivyFindings == true }}
+      failOnGitleaksFindings: ${{ github.event_name == 'schedule' || inputs.failOnGitleaksFindings == true }}
+      failOnOSVFindings: ${{ github.event_name == 'schedule' || inputs.failOnOSVFindings == true }}
+      failOnTruffleHogFindings: ${{ github.event_name == 'schedule' || inputs.failOnTruffleHogFindings == true }}
+
+      ## When OSV doesn't find any supported scan targets, treat it as a success/neutral exit
+      osvAllowNoPackageSources: true
+
+      # pipelineTemplatesRef: main
+      pipelineTemplatesRef: ${{ github.event_name == 'schedule' && 'main' || inputs.pipelineTemplatesRef }}
