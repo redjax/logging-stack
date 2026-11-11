@@ -4,6 +4,7 @@ config/prometheus/targets/*
 config/prometheus/targets/cadvisor/*
 config/prometheus/targets/node_exporter/*
 config/prometheus/prometheus.yml
+backups/*
 
 !config/prometheus/
 !config/prometheus/targets/

@@ -1,0 +1,109 @@
+---
+volumes:
+  nautical_data: {}
+
+services:
+  nautical:
+    image: minituff/nautical-backup:${NAUTICAL_IMAGE:-latest}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+      LABEL_PREFIX: central-logging
+      REQUIRE_LABEL: "true"
+
+      CRON_SCHEDULE: "${NAUTICAL_CRON_SCHEDULE:-0 4 * * *}"
+      BACKUP_ON_START: "false"
+
+      USE_DEST_DATE_FOLDER: "true"
+      DEST_DATE_FORMAT: "%Y-%m-%d_%H-%M-%S"
+      DEST_DATE_PATH_FORMAT: date/container
+      USE_CONTAINER_BACKUP_DATE: "false"
+
+      REPORT_FILE: "true"
+      STOP_TIMEOUT: "120"
+      START_TIMEOUT: "120"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      ## Nautical's own history/configuration.
+      - ${NAUTICAL_DATA_DIR:-nautical_data}:/config
+
+      ## Mount logging stack's directories
+      - ${GRAFANA_DATA_DIR:-grafana_data}:/app/source/grafana:ro
+      - ${LOKI_DATA_DIR:-loki_data}:/app/source/loki:ro
+      - ${PROMETHEUS_DATA_DIR:-prometheus_data}:/app/source/prometheus:ro
+
+      ## Application configuration and provisioning.
+      - type: bind
+        source: ./config
+        target: /app/source/config
+        read_only: true
+        bind:
+          create_host_path: false
+
+      ## Deployment files needed for recovery.
+      - type: bind
+        source: ./compose.yml
+        target: /app/source/stack/compose.yml
+        read_only: true
+        bind:
+          create_host_path: false
+
+      ## Env file for container environments
+      - type: bind
+        source: ./.env
+        target: /app/source/stack/.env
+        read_only: true
+        bind:
+          create_host_path: false
+
+      ## Overlays directory, i.e. overlays/nautical.yml
+      - type: bind
+        source: ./overlays
+        target: /app/source/stack/overlays
+        read_only: true
+        bind:
+          create_host_path: false
+
+      ## Directory where nautical backups will be saved
+      - type: bind
+        source: ${NAUTICAL_BACKUP_DIR:?Set NAUTICAL_BACKUP_DIR}
+        target: /app/destination
+        bind:
+          create_host_path: false
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "6"
+
+  grafana:
+    labels:
+      central-logging.enable: "true"
+      central-logging.group: central-logging
+      central-logging.stop-before-backup: "true"
+      central-logging.stop-timeout: "120"
+      central-logging.override-source-dir: grafana
+      central-logging.override-destination-dir: grafana
+      central-logging.additional-folders: config,stack
+      central-logging.additional-folders.when: during
+
+  loki:
+    labels:
+      central-logging.enable: "true"
+      central-logging.group: central-logging
+      central-logging.stop-before-backup: "true"
+      central-logging.stop-timeout: "120"
+      central-logging.override-source-dir: loki
+      central-logging.override-destination-dir: loki
+
+  prometheus:
+    labels:
+      central-logging.enable: "true"
+      central-logging.group: central-logging
+      central-logging.stop-before-backup: "true"
+      central-logging.stop-timeout: "120"
+      central-logging.override-source-dir: prometheus
+      central-logging.override-destination-dir: prometheus
