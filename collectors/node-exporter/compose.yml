@@ -1,7 +1,8 @@
 ---
 services:
   node-exporter:
-    image: quay.io/prometheus/node-exporter:${NODE_EXPORTER_IMAGE:-latest}
+    # renovate: datasource=docker depName=quay.io/prometheus/node-exporter
+    image: quay.io/prometheus/node-exporter:${NODE_EXPORTER_IMAGE:-v1.12.1}
     container_name: node-exporter
     restart: unless-stopped
     network_mode: host

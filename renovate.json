@@ -1,0 +1,39 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "github>redjax/PipelineTemplates//config/renovate/default#main"
+    ],
+    "timezone": "America/New_York",
+    "customManagers": [
+        {
+            "customType": "regex",
+            "description": "Update annotated Docker image tag defaults in Compose YAML",
+            "managerFilePatterns": [
+                "/\\.ya?ml$/"
+            ],
+            "matchStrings": [
+                "# renovate: datasource=docker depName=(?<depName>[^\\s]+)[ \\t]*\\r?\\n[ \\t]*image:[ \\t]*[\"']?[^\\s$\"']+\\$\\{[A-Za-z_][A-Za-z0-9_]*:-(?<currentValue>[^\\s}]+)\\}"
+            ],
+            "datasourceTemplate": "docker",
+            "versioningTemplate": "docker"
+        }
+    ],
+    "packageRules": [
+        {
+            "description": "Keep environment-default Docker references tag-only",
+            "matchDatasources": [
+                "docker"
+            ],
+            "pinDigests": false
+        },
+        {
+            "description": "Wait seven days before allowing dependency updates",
+            "matchPackageNames": [
+                "*"
+            ],
+            "minimumReleaseAge": "7 days",
+            "minimumReleaseAgeBehaviour": "timestamp-required"
+        }
+    ]
+}

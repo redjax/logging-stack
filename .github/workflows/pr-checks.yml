@@ -1,0 +1,23 @@
+---
+name: PR Checks
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  renovate-gate:
+    name: Renovate Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Renovate Gate
+        run: |
+          ## Renovate needs a successful pipeline to auto-merge PRs.
+          #  While there are no other steps in this pipeline, do a
+          #  simple echo to "pass" the pipeline step.
+          echo "Renovate gate passed."
+          exit 0
