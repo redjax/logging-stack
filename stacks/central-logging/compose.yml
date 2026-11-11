@@ -14,7 +14,8 @@ x-container-logging: &container-logging
 
 services:
   loki:
-    image: grafana/loki:${LOKI_IMAGE:-latest}
+    # renovate: datasource=docker depName=grafana/loki
+    image: grafana/loki:${LOKI_IMAGE:-3.6.20}
     restart: unless-stopped
     user: "0:0"
     cpus: "${LOKI_CPUS:-1.0}"
@@ -34,7 +35,8 @@ services:
     logging: *container-logging
 
   prometheus:
-    image: prom/prometheus:${PROMETHEUS_IMAGE:-latest}
+    # renovate: datasource=docker depName=prom/prometheus
+    image: prom/prometheus:${PROMETHEUS_IMAGE:-v3.16.0}
     restart: unless-stopped
     cpus: "${PROMETHEUS_CPUS:-0.5}"
     mem_limit: "${PROMETHEUS_MEM_LIMIT:-384M}"
@@ -64,7 +66,8 @@ services:
     logging: *container-logging
 
   grafana:
-    image: grafana/grafana:${GRAFANA_IMAGE:-latest}
+    # renovate: datasource=docker depName=grafana/grafana
+    image: grafana/grafana:${GRAFANA_IMAGE:-13.3.1}
     restart: unless-stopped
     cpus: "${GRAFANA_CPUS:-1.0}"
     mem_limit: "${GRAFANA_MEM_LIMIT:-384M}"
