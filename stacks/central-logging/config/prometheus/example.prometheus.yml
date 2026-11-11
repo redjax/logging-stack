@@ -20,7 +20,7 @@ scrape_configs:
   - job_name: node
     file_sd_configs:
       - files:
-          - /etc/prometheus/targets/node/*.yml
+          - /etc/prometheus/targets/node_exporter/*.yml
         refresh_interval: 60s
 
   ## Scrape cadvisor endpoints

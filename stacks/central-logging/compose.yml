@@ -54,6 +54,12 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      - type: bind
+        source: ${PROMETHEUS_TARGETS_DIR:-./config/prometheus/targets}
+        target: /etc/prometheus/targets
+        read_only: true
+        bind:
+          create_host_path: false
       - ${PROMETHEUS_DATA_DIR:-prometheus_data}:/prometheus
     logging: *container-logging
 
