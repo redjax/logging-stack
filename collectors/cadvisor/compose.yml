@@ -2,7 +2,7 @@
 services:
   cadvisor:
     # renovate: datasource=docker depName=ghcr.io/google/cadvisor
-    image: ghcr.io/google/cadvisor:${CADVISOR_IMAGE:-v0.60}
+    image: ghcr.io/google/cadvisor:${CADVISOR_IMAGE:-0.60}
     container_name: cadvisor
     restart: unless-stopped
     cpus: "${CADVISOR_CPUS:-0.5}"
